@@ -1,33 +1,44 @@
 import os
+import random
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from pymongo import MongoClient
+from pymongo.errors import ServerSelectionTimeoutError
 from dotenv import load_dotenv
-
-import random
-import certifi
-
 
 load_dotenv()
 
 app = Flask(__name__)
 CORS(app)
 
+_client = None
+
+def get_db():
+    global _client
+    if _client is None:
+        _client = MongoClient(
+            os.getenv("MONGODB_URI"),
+            serverSelectionTimeoutMS=3000
+        )
+    return _client["video_ads_db"]
+
+def ads_collection():
+    return get_db()["ads"]
+
+def configs_collection():
+    return get_db()["configs"]
+
 mongo_uri = os.getenv("MONGODB_URI")
 if not mongo_uri:
-    raise RuntimeError("MONGODB_URI is not set. Create api-service/.env and put it there.")
-
-client = MongoClient(mongo_uri, tlsCAFile=certifi.where())
-db = client["video_ads_db"]
-ads_collection = db["ads"]
-configs_collection = db["configs"]
-
+    raise RuntimeError("MONGODB_URI is not set")
 
 @app.get("/health")
 def health():
-    client.admin.command("ping")
-    return {"status": "ok", "db": "connected"}
-
+    try:
+        get_db().command("ping")
+        return {"status": "ok", "db": "connected"}
+    except ServerSelectionTimeoutError:
+        return {"status": "error", "db": "unreachable"}, 500
 
 @app.get("/ads")
 def get_ads():
@@ -36,7 +47,7 @@ def get_ads():
     if ad_type:
         query["type"] = ad_type
 
-    ads = list(ads_collection.find(query, {"_id": 0}))
+    ads = list(ads_collection().find(query, {"_id": 0}))
     return jsonify(ads)
 
 @app.post("/ads")
@@ -59,36 +70,32 @@ def create_ad():
     if ad["type"] == "video" and "videoUrl" not in ad:
         return {"error": "videoUrl is required for video ads"}, 400
 
-    # upsert by id so repeated tests don't create duplicates
-    ads_collection.update_one({"id": ad["id"]}, {"$set": ad}, upsert=True)
+    ads_collection().update_one({"id": ad["id"]}, {"$set": ad}, upsert=True)
     return {"status": "created", "id": ad["id"]}, 201
 
 @app.put("/ads/<ad_id>")
-def update_ad(ad_id: str):
+def update_ad(ad_id):
     updates = request.get_json(force=True)
-
-    # don't allow changing id via update
     updates.pop("id", None)
 
-    result = ads_collection.update_one({"id": ad_id}, {"$set": updates})
+    result = ads_collection().update_one({"id": ad_id}, {"$set": updates})
     if result.matched_count == 0:
         return {"error": "Ad not found"}, 404
 
-    updated = ads_collection.find_one({"id": ad_id}, {"_id": 0})
-    return jsonify(updated), 200
-
+    updated = ads_collection().find_one({"id": ad_id}, {"_id": 0})
+    return jsonify(updated)
 
 @app.delete("/ads/<ad_id>")
-def delete_ad(ad_id: str):
-    result = ads_collection.delete_one({"id": ad_id})
+def delete_ad(ad_id):
+    result = ads_collection().delete_one({"id": ad_id})
     if result.deleted_count == 0:
         return {"error": "Ad not found"}, 404
 
-    return {"status": "deleted", "id": ad_id}, 200
+    return {"status": "deleted", "id": ad_id}
 
 @app.get("/config/<client_id>")
 def get_config(client_id):
-    config = configs_collection.find_one(
+    config = configs_collection().find_one(
         {"clientId": client_id},
         {"_id": 0}
     )
@@ -108,13 +115,13 @@ def upsert_config(client_id):
         "allowedCategories": data.get("allowedCategories", [])
     }
 
-    configs_collection.update_one(
+    configs_collection().update_one(
         {"clientId": client_id},
         {"$set": config},
         upsert=True
     )
 
-    return jsonify(config), 200
+    return jsonify(config)
 
 @app.get("/ads/select")
 def select_ad():
@@ -124,7 +131,11 @@ def select_ad():
     if not client_id:
         return {"error": "clientId is required"}, 400
 
-    config = configs_collection.find_one({"clientId": client_id}, {"_id": 0})
+    config = configs_collection().find_one(
+        {"clientId": client_id},
+        {"_id": 0}
+    )
+
     if not config:
         return {"error": "Client config not found"}, 404
 
@@ -144,11 +155,8 @@ def select_ad():
     if allowed_categories:
         query["categories"] = {"$in": allowed_categories}
 
-    ads = list(ads_collection.find(query, {"_id": 0}))
+    ads = list(ads_collection().find(query, {"_id": 0}))
     if not ads:
         return {"ad": None}
 
     return jsonify(random.choice(ads))
-
-
-
