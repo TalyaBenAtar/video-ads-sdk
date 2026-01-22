@@ -237,3 +237,14 @@ button:hover {
     }
 }
 
+.row-btn {
+    width: auto;
+    padding: 6px 10px;
+    font-size: 13px;
+    border-radius: 6px;
+}
+
+.enabled-toggle {
+    transform: scale(1.1);
+}
+
