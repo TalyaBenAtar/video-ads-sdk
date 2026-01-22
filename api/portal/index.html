@@ -31,6 +31,7 @@
             </div>
         </main>
     </div>
+
     <!-- Create/Edit Ad Modal (hidden by default) -->
     <div id="ad-modal" class="modal hidden" aria-hidden="true">
         <div class="modal-card">
@@ -40,6 +41,17 @@
             </div>
 
             <form id="ad-form" class="form">
+                <!-- App ownership -->
+                <label>
+                    Client ID (App ID)
+                    <input
+                        id="ad-clientId"
+                        type="text"
+                        placeholder="memory-game"
+                        required
+                    />
+                </label>
+
                 <div class="form-row">
                     <label>
                         ID
