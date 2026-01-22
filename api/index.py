@@ -5,6 +5,9 @@ from flask_cors import CORS
 from pymongo import MongoClient
 from pymongo.errors import ServerSelectionTimeoutError
 from dotenv import load_dotenv
+import time
+import jwt
+from functools import wraps
 
 load_dotenv()
 
@@ -32,6 +35,54 @@ mongo_uri = os.getenv("MONGODB_URI")
 if not mongo_uri:
     raise RuntimeError("MONGODB_URI is not set")
 
+# --- Admin Auth (JWT) ---
+ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "admin")
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD")
+JWT_SECRET = os.getenv("JWT_SECRET")
+
+if not ADMIN_PASSWORD:
+    raise RuntimeError("ADMIN_PASSWORD is not set")
+if not JWT_SECRET:
+    raise RuntimeError("JWT_SECRET is not set")
+
+JWT_TTL_SECONDS = 60 * 60 * 12  # 12 hours
+
+
+def _create_jwt(username: str) -> str:
+    now = int(time.time())
+    payload = {
+        "sub": username,
+        "role": "admin",
+        "iat": now,
+        "exp": now + JWT_TTL_SECONDS,
+    }
+    return jwt.encode(payload, JWT_SECRET, algorithm="HS256")
+
+
+def _get_bearer_token() -> str | None:
+    auth = request.headers.get("Authorization", "")
+    if auth.startswith("Bearer "):
+        return auth[len("Bearer "):].strip()
+    return None
+
+
+def require_admin(f):
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+        token = _get_bearer_token()
+        if not token:
+            return {"error": "Missing Authorization: Bearer <token>"}, 401
+        try:
+            payload = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
+            if payload.get("role") != "admin":
+                return {"error": "Forbidden"}, 403
+        except jwt.ExpiredSignatureError:
+            return {"error": "Token expired"}, 401
+        except jwt.InvalidTokenError:
+            return {"error": "Invalid token"}, 401
+        return f(*args, **kwargs)
+    return wrapper
+
 @app.get("/health")
 def health():
     try:
@@ -39,6 +90,18 @@ def health():
         return {"status": "ok", "db": "connected"}
     except ServerSelectionTimeoutError:
         return {"status": "error", "db": "unreachable"}, 500
+
+@app.post("/auth/login")
+def login():
+    body = request.get_json(force=True) or {}
+    username = body.get("username")
+    password = body.get("password")
+
+    if username != ADMIN_USERNAME or password != ADMIN_PASSWORD:
+        return {"error": "Invalid credentials"}, 401
+
+    token = _create_jwt(username)
+    return {"token": token}, 200
 
 @app.get("/ads")
 def get_ads():
@@ -51,6 +114,7 @@ def get_ads():
     return jsonify(ads)
 
 @app.post("/ads")
+@require_admin
 def create_ad():
     ad = request.get_json(force=True)
     ad.setdefault("categories", [])
@@ -74,6 +138,7 @@ def create_ad():
     return {"status": "created", "id": ad["id"]}, 201
 
 @app.put("/ads/<ad_id>")
+@require_admin
 def update_ad(ad_id):
     updates = request.get_json(force=True)
     updates.pop("id", None)
@@ -86,6 +151,7 @@ def update_ad(ad_id):
     return jsonify(updated)
 
 @app.delete("/ads/<ad_id>")
+@require_admin
 def delete_ad(ad_id):
     result = ads_collection().delete_one({"id": ad_id})
     if result.deleted_count == 0:
@@ -106,6 +172,7 @@ def get_config(client_id):
     return jsonify(config)
 
 @app.put("/config/<client_id>")
+@require_admin
 def upsert_config(client_id):
     data = request.get_json(force=True)
 
