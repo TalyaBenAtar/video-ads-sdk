@@ -31,6 +31,69 @@
             </div>
         </main>
     </div>
+    <!-- Create/Edit Ad Modal (hidden by default) -->
+    <div id="ad-modal" class="modal hidden" aria-hidden="true">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h2 id="ad-modal-title">Create Ad</h2>
+                <button id="ad-modal-close" class="icon-btn" type="button" aria-label="Close">✕</button>
+            </div>
+
+            <form id="ad-form" class="form">
+                <div class="form-row">
+                    <label>
+                        ID
+                        <input id="ad-id" type="text" required />
+                    </label>
+
+                    <label>
+                        Title
+                        <input id="ad-title" type="text" required />
+                    </label>
+                </div>
+
+                <div class="form-row">
+                    <label>
+                        Type
+                        <select id="ad-type" required>
+                            <option value="video">video</option>
+                            <option value="image">image</option>
+                        </select>
+                    </label>
+
+                    <label class="checkbox">
+                        <input id="ad-enabled" type="checkbox" checked />
+                        Enabled
+                    </label>
+                </div>
+
+                <label>
+                    Categories (comma separated)
+                    <input id="ad-categories" type="text" placeholder="kids, cars" />
+                </label>
+
+                <label>
+                    Click URL
+                    <input id="ad-clickUrl" type="url" placeholder="https://..." required />
+                </label>
+
+                <label id="videoUrl-row">
+                    Video URL
+                    <input id="ad-videoUrl" type="url" placeholder="https://..." />
+                </label>
+
+                <label id="imageUrl-row" style="display:none;">
+                    Image URL
+                    <input id="ad-imageUrl" type="url" placeholder="https://..." />
+                </label>
+
+                <div class="modal-actions">
+                    <button id="ad-cancel" type="button" class="btn-secondary">Cancel</button>
+                    <button id="ad-save" type="submit">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
 
     <script src="api.js"></script>
     <script src="app.js"></script>
