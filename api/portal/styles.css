@@ -96,3 +96,16 @@ button:hover {
   background: #fafafa;
 }
 
+
+#logout-btn,
+#create-ad-btn {
+    width: auto;
+    padding: 8px 14px;
+    border-radius: 6px;
+    font-size: 14px;
+}
+
+/* Space under the Ads header row (Ads + Create button) */
+.card > div[style*="display: flex"] {
+    margin-bottom: 10px;
+}
