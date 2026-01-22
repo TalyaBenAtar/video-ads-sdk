@@ -93,8 +93,11 @@ def health():
     except ServerSelectionTimeoutError:
         return {"status": "error", "db": "unreachable"}, 500
 
-@app.post("/auth/login")
+@app.route("/auth/login", methods=["POST", "OPTIONS"])
 def login():
+    if request.method == "OPTIONS":
+        return ("", 204)
+
     body = request.get_json(force=True) or {}
     username = body.get("username")
     password = body.get("password")
