@@ -14,6 +14,13 @@ load_dotenv()
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}}, allow_headers=["Content-Type", "Authorization"])
 
+@app.before_request
+def handle_preflight():
+    # Let browsers complete CORS preflight without auth
+    if request.method == "OPTIONS":
+        return ("", 204)
+
+
 _client = None
 
 def get_db():
