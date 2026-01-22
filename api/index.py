@@ -12,7 +12,7 @@ from functools import wraps
 load_dotenv()
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, resources={r"/*": {"origins": "*"}}, allow_headers=["Content-Type", "Authorization"])
 
 _client = None
 
@@ -69,6 +69,8 @@ def _get_bearer_token() -> str | None:
 def require_admin(f):
     @wraps(f)
     def wrapper(*args, **kwargs):
+        if request.method == "OPTIONS":
+            return ("", 204)
         token = _get_bearer_token()
         if not token:
             return {"error": "Missing Authorization: Bearer <token>"}, 401
