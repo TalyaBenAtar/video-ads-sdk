@@ -44,6 +44,7 @@ function openModal(mode, ad) {
   const modal = document.getElementById("ad-modal");
   const title = document.getElementById("ad-modal-title");
 
+  const clientIdEl = document.getElementById("ad-clientId");
   const idEl = document.getElementById("ad-id");
   const titleEl = document.getElementById("ad-title");
   const typeEl = document.getElementById("ad-type");
@@ -56,8 +57,12 @@ function openModal(mode, ad) {
   const videoRow = document.getElementById("videoUrl-row");
   const imageRow = document.getElementById("imageUrl-row");
 
+  // Remember last used clientId to make life easier
+  const lastClientId = localStorage.getItem("last_client_id") || "";
+
   // Reset defaults
   title.textContent = mode === "edit" ? "Edit Ad" : "Create Ad";
+  clientIdEl.value = ad?.clientId || lastClientId || "";
   idEl.value = ad?.id || "";
   titleEl.value = ad?.title || "";
   typeEl.value = ad?.type || "video";
@@ -115,6 +120,7 @@ function renderAds(ads, container) {
   table.innerHTML = `
     <thead>
       <tr>
+        <th>Client ID</th>
         <th>ID</th>
         <th>Title</th>
         <th>Type</th>
@@ -129,6 +135,7 @@ function renderAds(ads, container) {
           const checked = a.enabled ? "checked" : "";
           return `
             <tr>
+              <td>${escapeHtml(a.clientId || "")}</td>
               <td>${escapeHtml(a.id)}</td>
               <td>${escapeHtml(a.title)}</td>
               <td>${escapeHtml(a.type)}</td>
@@ -246,11 +253,9 @@ async function loadDashboard() {
         method: "PUT",
         body: { enabled },
       });
-      // update cache locally
       const ad = cachedAds.find((x) => x.id === id);
       if (ad) ad.enabled = enabled;
     } catch (err) {
-      // rollback UI if it failed
       toggle.checked = !enabled;
       alert(err?.message || "Failed to update enabled");
     }
@@ -262,6 +267,7 @@ async function loadDashboard() {
 
     const mode = form.dataset.mode || "create";
 
+    const clientId = document.getElementById("ad-clientId").value.trim();
     const id = document.getElementById("ad-id").value.trim();
     const title = document.getElementById("ad-title").value.trim();
     const type = document.getElementById("ad-type").value;
@@ -271,7 +277,16 @@ async function loadDashboard() {
     const videoUrl = document.getElementById("ad-videoUrl").value.trim();
     const imageUrl = document.getElementById("ad-imageUrl").value.trim();
 
+    if (!clientId) {
+      alert("Client ID is required");
+      return;
+    }
+
+    // remember last used clientId
+    localStorage.setItem("last_client_id", clientId);
+
     const payload = {
+      clientId,
       id,
       title,
       type,
