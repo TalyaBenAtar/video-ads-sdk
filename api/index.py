@@ -8,10 +8,12 @@ from dotenv import load_dotenv
 import time
 import jwt
 from functools import wraps
+from flask import send_from_directory
 
 load_dotenv()
 
 app = Flask(__name__)
+PORTAL_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "public", "portal"))
 CORS(app, resources={r"/*": {"origins": "*"}}, allow_headers=["Content-Type", "Authorization"])
 
 @app.before_request
@@ -239,3 +241,12 @@ def select_ad():
         return {"ad": None}
 
     return jsonify(random.choice(ads))
+
+@app.get("/portal")
+def portal_root():
+    return send_from_directory(PORTAL_DIR, "login.html")
+
+@app.get("/portal/<path:filename>")
+def portal_files(filename):
+    return send_from_directory(PORTAL_DIR, filename)
+
