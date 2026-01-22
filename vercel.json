@@ -4,8 +4,8 @@
     { "src": "api/index.py", "use": "@vercel/python" }
   ],
   "routes": [
-    { "src": "/portal/(.*)", "dest": "/public/portal/$1" },
-    { "src": "/portal", "dest": "/public/portal/login.html" },
+    { "handle": "filesystem" },
+    { "src": "/portal", "dest": "/portal/login.html" },
     { "src": "/(.*)", "dest": "api/index.py" }
   ]
 }
