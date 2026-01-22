@@ -242,6 +242,21 @@ def select_ad():
 
     return jsonify(random.choice(ads))
 
+@app.get("/portal/_debug")
+def portal_debug():
+    info = {
+        "PORTAL_DIR": PORTAL_DIR,
+        "exists": os.path.exists(PORTAL_DIR),
+        "is_dir": os.path.isdir(PORTAL_DIR),
+        "files": []
+    }
+    try:
+        info["files"] = os.listdir(PORTAL_DIR)
+    except Exception as e:
+        info["error"] = str(e)
+    return jsonify(info)
+
+
 @app.get("/portal")
 def portal_root():
     return send_from_directory(PORTAL_DIR, "login.html")
