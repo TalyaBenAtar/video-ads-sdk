@@ -13,7 +13,7 @@ from flask import send_from_directory
 load_dotenv()
 
 app = Flask(__name__)
-PORTAL_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "public", "portal"))
+PORTAL_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "portal"))
 CORS(app, resources={r"/*": {"origins": "*"}}, allow_headers=["Content-Type", "Authorization"])
 
 @app.before_request

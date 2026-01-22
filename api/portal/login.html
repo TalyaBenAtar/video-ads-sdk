@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Admin Login</title>
+    <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+    <div class="login-container">
+        <h1>Admin Portal</h1>
+
+        <form id="login-form">
+            <label>
+                Username
+                <input type="text" id="username" required />
+            </label>
+
+            <label>
+                Password
+                <input type="password" id="password" required />
+            </label>
+
+            <button type="submit">Login</button>
+        </form>
+
+        <p id="error" class="error"></p>
+    </div>
+
+    <script src="api.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
