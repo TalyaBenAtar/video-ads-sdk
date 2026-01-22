@@ -225,6 +225,7 @@ def select_ad():
 
     query = {
         "enabled": True,
+        "clientId": client_id,          # ✅ NEW: scope ads to this client/app only
         "type": {"$in": allowed_types}
     }
 
@@ -264,4 +265,3 @@ def portal_root():
 @app.get("/portal/<path:filename>")
 def portal_files(filename):
     return send_from_directory(PORTAL_DIR, filename)
-
