@@ -20,6 +20,67 @@
                 <p id="status">Loading...</p>
             </div>
 
+            <!-- 🔹 Client Config Card -->
+            <div class="card">
+                <div style="display:flex; justify-content:space-between; align-items:center; gap:12px;">
+                    <h2 style="margin:0;">Client Config</h2>
+                    <span class="muted" style="margin:0;">Controls ad selection per app</span>
+                </div>
+
+                <div style="margin-top:12px; display:grid; gap:12px;">
+                    <label>
+                        Client ID (App ID)
+                        <input
+                            id="cfg-clientId"
+                            type="text"
+                            placeholder="memory-game"
+                        />
+                    </label>
+
+                    <div style="display:flex; gap:16px; align-items:center; flex-wrap:wrap;">
+                        <label class="checkbox" style="margin:0;">
+                            <input id="cfg-type-image" type="checkbox" checked />
+                            image
+                        </label>
+
+                        <label class="checkbox" style="margin:0;">
+                            <input id="cfg-type-video" type="checkbox" checked />
+                            video
+                        </label>
+                    </div>
+
+                    <label>
+                        Allowed Categories (comma separated)
+                        <input
+                            id="cfg-categories"
+                            type="text"
+                            placeholder="kids, cars"
+                        />
+                    </label>
+
+                    <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                        <button
+                            id="cfg-load-btn"
+                            type="button"
+                            class="btn-secondary"
+                            style="width:auto; padding:10px 14px;"
+                        >
+                            Load
+                        </button>
+
+                        <button
+                            id="cfg-save-btn"
+                            type="button"
+                            style="width:auto; padding:10px 14px;"
+                        >
+                            Save
+                        </button>
+
+                        <span id="cfg-msg" class="muted"></span>
+                    </div>
+                </div>
+            </div>
+
             <div class="card">
                 <!-- Ads header + Create button -->
                 <div style="display: flex; justify-content: space-between; align-items: center;">
