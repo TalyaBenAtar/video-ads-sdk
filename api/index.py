@@ -120,9 +120,13 @@ def login():
 @app.get("/ads")
 def get_ads():
     ad_type = request.args.get("type")
+    client_id = request.args.get("clientId")
+
     query = {}
     if ad_type:
         query["type"] = ad_type
+    if client_id:
+        query["clientId"] = client_id
 
     ads = list(ads_collection().find(query, {"_id": 0}))
     return jsonify(ads)
@@ -225,7 +229,7 @@ def select_ad():
 
     query = {
         "enabled": True,
-        "clientId": client_id,          # ✅ NEW: scope ads to this client/app only
+        "clientId": client_id,          # ✅ scope ads to this client/app only
         "type": {"$in": allowed_types}
     }
 
