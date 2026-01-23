@@ -221,11 +221,18 @@ def select_ad():
         {"_id": 0}
     )
 
-    if not config:
-        return {"error": "Client config not found"}, 404
+   if not config:
+    # ✅ Default behavior if no config exists yet:
+    # allow both types and do not restrict categories
+    config = {
+        "clientId": client_id,
+        "allowedTypes": ["image", "video"],
+        "allowedCategories": []
+    }
 
-    allowed_types = config.get("allowedTypes", ["image", "video"])
-    allowed_categories = config.get("allowedCategories", [])
+allowed_types = config.get("allowedTypes", ["image", "video"])
+allowed_categories = config.get("allowedCategories", [])
+
 
     query = {
         "enabled": True,
