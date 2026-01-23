@@ -31,6 +31,11 @@ function escapeHtml(str) {
     .replaceAll("'", "&#039;");
 }
 
+// ✅ ClientId filtering helper (uses the Ad modal field)
+function getSelectedClientId() {
+  return document.getElementById("ad-clientId")?.value?.trim();
+}
+
 function parseCategories(input) {
   return String(input || "")
     .split(",")
@@ -205,8 +210,14 @@ async function loadDashboard() {
 
   async function refreshAds() {
     const ads = await apiRequest("/ads");
-    cachedAds = ads || [];
-    renderAds(cachedAds, adsEl);
+    const allAds = ads || [];
+    cachedAds = allAds;
+
+    // ✅ Filter by selected clientId if present
+    const clientId = getSelectedClientId() || localStorage.getItem("last_client_id") || "";
+    const filtered = clientId ? allAds.filter((a) => a.clientId === clientId) : allAds;
+
+    renderAds(filtered, adsEl);
   }
 
   // initial load
