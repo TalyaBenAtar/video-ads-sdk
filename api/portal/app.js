@@ -208,17 +208,17 @@ async function loadDashboard() {
     statusEl.textContent = `Status error: ${e.message || "Failed"}`;
   }
 
-  async function refreshAds() {
-    const ads = await apiRequest("/ads");
-    const allAds = ads || [];
-    cachedAds = allAds;
+ async function refreshAds() {
+  const clientId =
+    getSelectedClientId() || localStorage.getItem("last_client_id") || "";
 
-    // ✅ Filter by selected clientId if present
-    const clientId = getSelectedClientId() || localStorage.getItem("last_client_id") || "";
-    const filtered = clientId ? allAds.filter((a) => a.clientId === clientId) : allAds;
+  // If we have a clientId, ask the backend to return ONLY that app’s ads
+  const qs = clientId ? `?clientId=${encodeURIComponent(clientId)}` : "";
 
-    renderAds(filtered, adsEl);
-  }
+  const ads = await apiRequest(`/ads${qs}`);
+  cachedAds = ads || [];
+  renderAds(cachedAds, adsEl);
+}
 
   // initial load
   try {
