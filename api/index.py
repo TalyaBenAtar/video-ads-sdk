@@ -214,28 +214,22 @@ def select_ad():
     requested_type = request.args.get("type")
 
     if not client_id:
-        return {"error": "clientId is required"}, 400
+        return jsonify({"error": "clientId is required"}), 400
 
-    config = configs_collection().find_one(
-        {"clientId": client_id},
-        {"_id": 0}
-    )
-
-    if not config:
-        return {"error": "Client config not found"}, 404
-
+    # If no config exists yet, treat as "allow everything"
+    config = configs_collection().find_one({"clientId": client_id}, {"_id": 0}) or {}
     allowed_types = config.get("allowedTypes", ["image", "video"])
     allowed_categories = config.get("allowedCategories", [])
 
     query = {
         "enabled": True,
-        "clientId": client_id, 
-        "type": {"$in": allowed_types}
+        "clientId": client_id,
+        "type": {"$in": allowed_types},
     }
 
     if requested_type:
         if requested_type not in allowed_types:
-            return {"ad": None}
+            return jsonify({"ad": None})
         query["type"] = requested_type
 
     if allowed_categories:
@@ -243,9 +237,9 @@ def select_ad():
 
     ads = list(ads_collection().find(query, {"_id": 0}))
     if not ads:
-        return {"ad": None}
+        return jsonify({"ad": None})
 
-    return jsonify(random.choice(ads))
+    return jsonify({"ad": random.choice(ads)})
 
 @app.get("/portal/_debug")
 def portal_debug():
