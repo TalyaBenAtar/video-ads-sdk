@@ -3,9 +3,6 @@ layout: default
 title: Home
 ---
 
-[Home](index.md) | [SDK](sdk.md) | [API](api.md) | [Portal](portal.md)
-
----
 
 
 \# 📺 Ads SDK – Project Documentation
