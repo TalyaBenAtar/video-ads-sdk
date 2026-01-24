@@ -427,7 +427,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     form?.addEventListener("submit", async (e) => {
       e.preventDefault();
-      errorEl.textContent = "";
+      if (errorEl) errorEl.textContent = "";
+
 
       const username = document.getElementById("username").value.trim();
       const password = document.getElementById("password").value;
@@ -437,9 +438,30 @@ document.addEventListener("DOMContentLoaded", () => {
         setToken(token);
         window.location.href = "index.html";
       } catch (err) {
-        errorEl.textContent = err?.message || "Login failed";
+        if (errorEl) errorEl.textContent = err?.message || "Login failed";
       }
     });
+    const regForm = document.getElementById("register-form");
+const regError = document.getElementById("reg-error");
+
+regForm?.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  if (regError) regError.textContent = "";
+
+  const username = document.getElementById("reg-username").value.trim();
+  const password = document.getElementById("reg-password").value;
+  const clientId = document.getElementById("reg-clientId").value.trim();
+
+  try {
+    const token = await apiRegister(username, password, clientId);
+    setToken(token);
+    // Helps your dashboard auto-pick the right app
+    localStorage.setItem("last_client_id", clientId);
+    window.location.href = "index.html";
+  } catch (err) {
+    if (regError) regError.textContent = err?.message || "Registration failed";
+  }
+});
 
     return;
   }

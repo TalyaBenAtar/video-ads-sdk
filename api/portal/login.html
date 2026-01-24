@@ -9,6 +9,7 @@
     <div class="login-container">
         <h1>Admin Portal</h1>
 
+        <!-- LOGIN -->
         <form id="login-form">
             <label>
                 Username
@@ -24,6 +25,36 @@
         </form>
 
         <p id="error" class="error"></p>
+
+        <hr style="margin: 24px 0;" />
+
+        <h2>Create account</h2>
+
+        <form id="register-form">
+            <label>
+                Username
+                <input type="text" id="reg-username" required />
+            </label>
+
+            <label>
+                Password
+                <input type="password" id="reg-password" required />
+            </label>
+
+            <label>
+                Client ID (App ID)
+                <input
+                    type="text"
+                    id="reg-clientId"
+                    placeholder="my-cool-app"
+                    required
+                />
+            </label>
+
+            <button type="submit">Create account</button>
+        </form>
+
+        <p id="reg-error" class="error"></p>
     </div>
 
     <script src="api.js"></script>

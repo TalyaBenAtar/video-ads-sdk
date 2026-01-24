@@ -197,6 +197,55 @@ def login():
     token = _create_jwt(username=username, role=role, allowed_client_ids=allowed)
     return {"token": token}, 200
 
+@app.route("/auth/register", methods=["POST", "OPTIONS"])
+def register():
+    if request.method == "OPTIONS":
+        return ("", 204)
+
+    body = request.get_json(force=True) or {}
+    username = (body.get("username") or "").strip()
+    password = body.get("password") or ""
+    client_id = (body.get("clientId") or "").strip()
+
+    if not username or not password or not client_id:
+        return {"error": "username, password, and clientId are required"}, 400
+
+    # Basic clientId hygiene
+    if len(client_id) < 3 or " " in client_id:
+        return {"error": "clientId must be at least 3 chars and contain no spaces"}, 400
+
+    # Prevent stealing an existing app/clientId
+    existing_cfg = configs_collection().find_one({"clientId": client_id}, {"_id": 1})
+    existing_ads = ads_collection().find_one({"clientId": client_id}, {"_id": 1})
+    if existing_cfg or existing_ads:
+        return {"error": "clientId already exists. Choose a different one."}, 409
+
+    # Prevent duplicate usernames
+    existing_user = users_collection().find_one({"username": username}, {"_id": 1})
+    if existing_user:
+        return {"error": "username already exists"}, 409
+
+    # Create developer user tied to this clientId
+    doc = {
+        "username": username,
+        "passwordHash": _hash_password(password),
+        "role": "developer",
+        "allowedClientIds": [client_id],
+    }
+    users_collection().insert_one(doc)
+
+    # Create default config so /ads/select works immediately
+    configs_collection().update_one(
+        {"clientId": client_id},
+        {"$set": {"clientId": client_id, "allowedTypes": ["image", "video"], "allowedCategories": []}},
+        upsert=True
+    )
+
+    # Auto-login: return token
+    token = _create_jwt(username=username, role="developer", allowed_client_ids=[client_id])
+    return {"token": token}, 201
+
+
 @app.post("/admin/users")
 @require_admin
 def admin_create_user():

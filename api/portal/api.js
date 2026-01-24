@@ -13,6 +13,14 @@ function clearToken() {
     localStorage.removeItem("admin_token");
 }
 
+async function apiRegister(username, password, clientId) {
+  return apiRequest("/auth/register", {
+    method: "POST",
+    body: { username, password, clientId },
+  }).then((r) => r.token);
+}
+
+
 async function apiLogin(username, password) {
     const res = await fetch(`${API_BASE_URL}/auth/login`, {
         method: "POST",
