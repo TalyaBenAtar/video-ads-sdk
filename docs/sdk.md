@@ -4,10 +4,6 @@ title: Android SDK
 ---
 
 
-[Home](index.md) | [SDK](sdk.md) | [API](api.md) | [Portal](portal.md)
-
----
-
 
 \# 📱 Android Ads SDK
 
