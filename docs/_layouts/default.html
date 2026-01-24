@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{{ page.title }} | {{ site.title }}</title>
+    <style>
+      body { max-width: 900px; margin: 40px auto; padding: 0 20px; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; line-height: 1.6; }
+      header { margin-bottom: 24px; }
+      nav a { margin-right: 12px; text-decoration: none; }
+      nav a:hover { text-decoration: underline; }
+      code, pre { background: #f6f8fa; }
+      pre { padding: 12px; overflow: auto; border-radius: 8px; }
+      img { max-width: 100%; height: auto; border-radius: 8px; }
+      hr { margin: 24px 0; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <nav>
+        <a href="{{ '/index' | relative_url }}">Home</a>
+        <a href="{{ '/sdk' | relative_url }}">SDK</a>
+        <a href="{{ '/api' | relative_url }}">API</a>
+        <a href="{{ '/portal' | relative_url }}">Portal</a>
+      </nav>
+      <hr />
+    </header>
+
+    <main>
+      {{ content }}
+    </main>
+  </body>
+</html>
