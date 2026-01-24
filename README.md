@@ -169,3 +169,10 @@ This project is released under the MIT License.
 https://github.com/TalyaBenAtar/MemoryGame
 - Demo Application:
 Memory Game (included in SDK repository)
+
+## 📚 Documentation (GitHub Pages)
+
+Full project documentation, including SDK usage, backend API, and the administration portal, is available here:
+
+👉 https://talyabenatar.github.io/video-ads-sdk/
+
