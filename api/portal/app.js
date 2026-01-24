@@ -276,41 +276,16 @@ if (me.role !== "admin") {
   }
 });
 
-addAppBtn?.addEventListener("click", async () => {
-  try {
-    setAddAppMsg("Adding...");
-    const clientId = (newClientIdEl?.value || "").trim();
-    if (!clientId) return setAddAppMsg("Enter a clientId.");
+  // ----------------  App wiring ----------------
+  const addAppBtn = document.getElementById("add-app-btn");
+  const newClientIdEl = document.getElementById("new-clientId");
+  const addAppMsgEl = document.getElementById("add-app-msg");
+  const appsEl = document.getElementById("apps-list");
 
-    //  requires apiAddApp() in api.js (and backend route)
-    await apiAddApp(clientId);
-
-    // refresh /me so UI knows new allowed list
-    const me2 = await apiRequest("/me");
-    const allowed2 = me2.allowedClientIds || [];
-
-    // update display
-    if (appsEl) appsEl.textContent = allowed2.length ? allowed2.join(", ") : "(none)";
-
-    // set as active app immediately
-    localStorage.setItem("last_client_id", clientId);
-
-    const cfgClientIdEl = document.getElementById("cfg-clientId");
-    const adClientIdEl = document.getElementById("ad-clientId");
-    if (cfgClientIdEl) cfgClientIdEl.value = clientId;
-    if (adClientIdEl) adClientIdEl.value = clientId;
-
-   const lock2 = allowed2.length <= 1;
-    if (cfgClientIdEl) cfgClientIdEl.disabled = lock2;
-    if (adClientIdEl) adClientIdEl.disabled = lock2;
-
-    setAddAppMsg("Added ✔");
-    if (newClientIdEl) newClientIdEl.value = "";
-    await refreshAds();
-  } catch (e) {
-    setAddAppMsg(e?.message || "Failed");
+  function setAddAppMsg(msg) {
+    if (addAppMsgEl) addAppMsgEl.textContent = msg || "";
   }
-});
+ 
 
   logoutBtn?.addEventListener("click", () => {
     clearToken();
