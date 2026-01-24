@@ -188,25 +188,37 @@ def admin_create_user():
 
 
 @app.get("/ads")
-def get_ads():
-    ad_type = request.args.get("type")
+@require_auth
+def list_ads():
     client_id = request.args.get("clientId")
 
-    query = {}
-    if ad_type:
-        query["type"] = ad_type
-    if client_id:
-        query["clientId"] = client_id
+    user = request.user
+    if user["role"] == "admin":
+        query = {}
+        if client_id:
+            query["clientId"] = client_id
+    else:
+        allowed = user["allowedClientIds"]
+        if client_id:
+            if client_id not in allowed:
+                return {"error": "Forbidden"}, 403
+            query = {"clientId": client_id}
+        else:
+            query = {"clientId": {"$in": allowed}}
 
     ads = list(ads_collection().find(query, {"_id": 0}))
-    return jsonify(ads)
+    return ads, 200
 
 @app.post("/ads")
 @require_admin
 def create_ad():
-    ad = request.get_json(force=True)
-    ad.setdefault("categories", [])
-    ad.setdefault("enabled", True)
+    body = request.get_json(force=True) or {}
+    client_id = (body.get("clientId") or "").strip()
+    if not client_id:
+        return {"error": "clientId is required"}, 400
+
+    if not require_client_access(client_id):
+        return {"error": "Forbidden"}, 403
 
     required = ["id", "title", "type", "clickUrl"]
     missing = [k for k in required if k not in ad]
@@ -225,50 +237,76 @@ def create_ad():
     ads_collection().update_one({"id": ad["id"]}, {"$set": ad}, upsert=True)
     return {"status": "created", "id": ad["id"]}, 201
 
+def _get_ad_or_404(ad_id: str):
+    ad = ads_collection().find_one({"id": ad_id}, {"_id": 0})
+    if not ad:
+        return None
+    return ad
+
 @app.put("/ads/<ad_id>")
-@require_admin
+@require_auth
 def update_ad(ad_id):
-    updates = request.get_json(force=True)
-    updates.pop("id", None)
+    existing = _get_ad_or_404(ad_id)
+    if not existing:
+        return {"error": "Not found"}, 404
 
-    result = ads_collection().update_one({"id": ad_id}, {"$set": updates})
-    if result.matched_count == 0:
-        return {"error": "Ad not found"}, 404
+    if not require_client_access(existing["clientId"]):
+        return {"error": "Forbidden"}, 403
 
+    body = request.get_json(force=True) or {}
+
+    #  prevent dev from changing clientId ownership
+    if request.user["role"] != "admin":
+        body.pop("clientId", None)
+        body.pop("id", None)
+
+    ads_collection().update_one({"id": ad_id}, {"$set": body})
     updated = ads_collection().find_one({"id": ad_id}, {"_id": 0})
-    return jsonify(updated)
+    return updated, 200
+
 
 @app.delete("/ads/<ad_id>")
-@require_admin
+@require_auth
 def delete_ad(ad_id):
-    result = ads_collection().delete_one({"id": ad_id})
-    if result.deleted_count == 0:
-        return {"error": "Ad not found"}, 404
+    existing = _get_ad_or_404(ad_id)
+    if not existing:
+        return {"error": "Not found"}, 404
 
-    return {"status": "deleted", "id": ad_id}
+    if not require_client_access(existing["clientId"]):
+        return {"error": "Forbidden"}, 403
+
+    ads_collection().delete_one({"id": ad_id})
+    return {"status": "deleted", "id": ad_id}, 200
 
 @app.get("/config/<client_id>")
+@require_auth
 def get_config(client_id):
-    config = configs_collection().find_one(
-        {"clientId": client_id},
-        {"_id": 0}
-    )
+    if not require_client_access(client_id):
+        return {"error": "Forbidden"}, 403
 
-    if not config:
-        return {"error": "Config not found"}, 404
+    cfg = configs_collection().find_one({"clientId": client_id}, {"_id": 0})
+    if not cfg:
+        cfg = {"clientId": client_id, "allowedTypes": ["image","video"], "allowedCategories": []}
+    return cfg, 200
 
-    return jsonify(config)
 
 @app.put("/config/<client_id>")
-@require_admin
-def upsert_config(client_id):
-    data = request.get_json(force=True)
+@require_auth
+def put_config(client_id):
+    if not require_client_access(client_id):
+        return {"error": "Forbidden"}, 403
 
-    config = {
+    body = request.get_json(force=True) or {}
+    allowed_types = body.get("allowedTypes") or ["image","video"]
+    allowed_categories = body.get("allowedCategories") or []
+
+    doc = {
         "clientId": client_id,
-        "allowedTypes": data.get("allowedTypes", ["image", "video"]),
-        "allowedCategories": data.get("allowedCategories", [])
+        "allowedTypes": allowed_types,
+        "allowedCategories": allowed_categories,
     }
+    configs_collection().update_one({"clientId": client_id}, {"$set": doc}, upsert=True)
+    return doc, 200
 
     configs_collection().update_one(
         {"clientId": client_id},
@@ -324,6 +362,50 @@ def portal_debug():
     except Exception as e:
         info["error"] = str(e)
     return jsonify(info)
+
+from functools import wraps
+import jwt
+
+def get_auth():
+    """
+    Returns dict: {"username": str, "role": str, "allowedClientIds": list[str]}
+    """
+    auth = request.headers.get("Authorization", "")
+    if not auth.startswith("Bearer "):
+        return None
+    token = auth.split(" ", 1)[1].strip()
+    try:
+        payload = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
+        return {
+            "username": payload.get("sub"),
+            "role": payload.get("role"),
+            "allowedClientIds": payload.get("allowedClientIds") or [],
+        }
+    except Exception:
+        return None
+
+def require_auth(fn):
+    @wraps(fn)
+    def wrapper(*args, **kwargs):
+        user = get_auth()
+        if not user:
+            return {"error": "Unauthorized"}, 401
+        request.user = user  # attach
+        return fn(*args, **kwargs)
+    return wrapper
+
+def require_client_access(client_id: str) -> bool:
+    user = getattr(request, "user", None) or get_auth()
+    if not user:
+        return False
+    if user["role"] == "admin":
+        return True
+    return client_id in (user.get("allowedClientIds") or [])
+
+@app.get("/me")
+@require_auth
+def me():
+    return request.user, 200
 
 
 @app.get("/portal")
