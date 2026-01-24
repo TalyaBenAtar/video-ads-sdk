@@ -1,6 +1,6 @@
 ---
 layout: default
-title: Ads SDK Docs
+title: Android SDK
 ---
 
 
