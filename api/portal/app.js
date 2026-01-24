@@ -31,9 +31,10 @@ function escapeHtml(str) {
     .replaceAll("'", "&#039;");
 }
 
-// ✅ ClientId filtering helper (uses the Ad modal field)
+//  ClientId filtering helper (uses the Ad modal field)
 function getSelectedClientId() {
-  return document.getElementById("ad-clientId")?.value?.trim();
+  return document.getElementById("cfg-clientId")?.value?.trim()
+      || document.getElementById("ad-clientId")?.value?.trim();
 }
 
 function parseCategories(input) {
@@ -182,6 +183,74 @@ async function loadDashboard() {
   const form = document.getElementById("ad-form");
 
   let cachedAds = [];
+
+    // ---------------- Client Config wiring ----------------
+  const cfgClientIdEl = document.getElementById("cfg-clientId");
+  const cfgTypeImageEl = document.getElementById("cfg-type-image");
+  const cfgTypeVideoEl = document.getElementById("cfg-type-video");
+  const cfgCategoriesEl = document.getElementById("cfg-categories");
+  const cfgLoadBtn = document.getElementById("cfg-load-btn");
+  const cfgSaveBtn = document.getElementById("cfg-save-btn");
+  const cfgMsgEl = document.getElementById("cfg-msg");
+
+  function setCfgMsg(msg) {
+    if (cfgMsgEl) cfgMsgEl.textContent = msg || "";
+  }
+
+  function readCfgForm() {
+    const clientId = (cfgClientIdEl?.value || "").trim();
+    const allowedTypes = [];
+    if (cfgTypeImageEl?.checked) allowedTypes.push("image");
+    if (cfgTypeVideoEl?.checked) allowedTypes.push("video");
+    const allowedCategories = parseCategories(cfgCategoriesEl?.value || "");
+    return { clientId, allowedTypes, allowedCategories };
+  }
+
+  function applyCfgForm(cfg) {
+    if (!cfg) return;
+    if (cfgClientIdEl) cfgClientIdEl.value = cfg.clientId || "";
+    const types = cfg.allowedTypes || ["image", "video"];
+    if (cfgTypeImageEl) cfgTypeImageEl.checked = types.includes("image");
+    if (cfgTypeVideoEl) cfgTypeVideoEl.checked = types.includes("video");
+    if (cfgCategoriesEl) cfgCategoriesEl.value = (cfg.allowedCategories || []).join(", ");
+  }
+
+  cfgLoadBtn?.addEventListener("click", async () => {
+    try {
+      setCfgMsg("Loading...");
+      const clientId = (cfgClientIdEl?.value || "").trim();
+      if (!clientId) return setCfgMsg("Enter a clientId.");
+
+      const cfg = await apiRequest(`/config/${encodeURIComponent(clientId)}`);
+      applyCfgForm(cfg);
+      localStorage.setItem("last_client_id", clientId);
+      setCfgMsg("Loaded.");
+      await refreshAds();
+    } catch (e) {
+      setCfgMsg(e?.message || "Load failed");
+    }
+  });
+
+  cfgSaveBtn?.addEventListener("click", async () => {
+    try {
+      setCfgMsg("Saving...");
+      const { clientId, allowedTypes, allowedCategories } = readCfgForm();
+      if (!clientId) return setCfgMsg("Client ID is required.");
+
+      const cfg = await apiRequest(`/config/${encodeURIComponent(clientId)}`, {
+        method: "PUT",
+        body: { allowedTypes, allowedCategories },
+      });
+
+      applyCfgForm(cfg);
+      localStorage.setItem("last_client_id", clientId);
+      setCfgMsg("Saved.");
+      await refreshAds();
+    } catch (e) {
+      setCfgMsg(e?.message || "Save failed");
+    }
+  });
+
 
   logoutBtn?.addEventListener("click", () => {
     clearToken();
