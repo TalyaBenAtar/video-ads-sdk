@@ -124,6 +124,43 @@ def require_admin(f):
         return f(*args, **kwargs)
     return wrapper
 
+def get_auth():
+    """
+    Returns dict: {"username": str, "role": str, "allowedClientIds": list[str]}
+    """
+    auth = request.headers.get("Authorization", "")
+    if not auth.startswith("Bearer "):
+        return None
+    token = auth.split(" ", 1)[1].strip()
+    try:
+        payload = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
+        return {
+            "username": payload.get("sub"),
+            "role": payload.get("role"),
+            "allowedClientIds": payload.get("allowedClientIds") or [],
+        }
+    except Exception:
+        return None
+
+def require_auth(fn):
+    @wraps(fn)
+    def wrapper(*args, **kwargs):
+        user = get_auth()
+        if not user:
+            return {"error": "Unauthorized"}, 401
+        request.user = user  # attach
+        return fn(*args, **kwargs)
+    return wrapper
+
+def require_client_access(client_id: str) -> bool:
+    user = getattr(request, "user", None) or get_auth()
+    if not user:
+        return False
+    if user["role"] == "admin":
+        return True
+    return client_id in (user.get("allowedClientIds") or [])
+
+
 @app.get("/health")
 def health():
     try:
@@ -210,9 +247,10 @@ def list_ads():
     return ads, 200
 
 @app.post("/ads")
-@require_admin
+@require_auth
 def create_ad():
     body = request.get_json(force=True) or {}
+
     client_id = (body.get("clientId") or "").strip()
     if not client_id:
         return {"error": "clientId is required"}, 400
@@ -221,21 +259,21 @@ def create_ad():
         return {"error": "Forbidden"}, 403
 
     required = ["id", "title", "type", "clickUrl"]
-    missing = [k for k in required if k not in ad]
+    missing = [k for k in required if not body.get(k)]
     if missing:
         return {"error": f"Missing fields: {', '.join(missing)}"}, 400
 
-    if ad["type"] not in ["image", "video"]:
+    if body["type"] not in ["image", "video"]:
         return {"error": "type must be 'image' or 'video'"}, 400
 
-    if ad["type"] == "image" and "imageUrl" not in ad:
+    if body["type"] == "image" and not body.get("imageUrl"):
         return {"error": "imageUrl is required for image ads"}, 400
 
-    if ad["type"] == "video" and "videoUrl" not in ad:
+    if body["type"] == "video" and not body.get("videoUrl"):
         return {"error": "videoUrl is required for video ads"}, 400
 
-    ads_collection().update_one({"id": ad["id"]}, {"$set": ad}, upsert=True)
-    return {"status": "created", "id": ad["id"]}, 201
+    ads_collection().update_one({"id": body["id"]}, {"$set": body}, upsert=True)
+    return {"status": "created", "id": body["id"]}, 201
 
 def _get_ad_or_404(ad_id: str):
     ad = ads_collection().find_one({"id": ad_id}, {"_id": 0})
@@ -308,14 +346,7 @@ def put_config(client_id):
     configs_collection().update_one({"clientId": client_id}, {"$set": doc}, upsert=True)
     return doc, 200
 
-    configs_collection().update_one(
-        {"clientId": client_id},
-        {"$set": config},
-        upsert=True
-    )
-
-    return jsonify(config)
-
+ 
 @app.get("/ads/select")
 def select_ad():
     client_id = request.args.get("clientId")
@@ -363,44 +394,6 @@ def portal_debug():
         info["error"] = str(e)
     return jsonify(info)
 
-from functools import wraps
-import jwt
-
-def get_auth():
-    """
-    Returns dict: {"username": str, "role": str, "allowedClientIds": list[str]}
-    """
-    auth = request.headers.get("Authorization", "")
-    if not auth.startswith("Bearer "):
-        return None
-    token = auth.split(" ", 1)[1].strip()
-    try:
-        payload = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
-        return {
-            "username": payload.get("sub"),
-            "role": payload.get("role"),
-            "allowedClientIds": payload.get("allowedClientIds") or [],
-        }
-    except Exception:
-        return None
-
-def require_auth(fn):
-    @wraps(fn)
-    def wrapper(*args, **kwargs):
-        user = get_auth()
-        if not user:
-            return {"error": "Unauthorized"}, 401
-        request.user = user  # attach
-        return fn(*args, **kwargs)
-    return wrapper
-
-def require_client_access(client_id: str) -> bool:
-    user = getattr(request, "user", None) or get_auth()
-    if not user:
-        return False
-    if user["role"] == "admin":
-        return True
-    return client_id in (user.get("allowedClientIds") or [])
 
 @app.get("/me")
 @require_auth
