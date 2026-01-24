@@ -1,8 +1,7 @@
 ---
 layout: default
-title: Ads SDK Docs
+title: Home
 ---
-
 
 [Home](index.md) | [SDK](sdk.md) | [API](api.md) | [Portal](portal.md)
 
