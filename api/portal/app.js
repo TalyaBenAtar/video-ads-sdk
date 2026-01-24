@@ -174,25 +174,23 @@ async function loadDashboard() {
    const me = await apiRequest("/me"); // { username, role, allowedClientIds }
   const allowed = me.allowedClientIds || [];
 
-const appsEl = document.getElementById("current-apps");
-if (appsEl) appsEl.textContent = (allowed.length ? allowed.join(", ") : "(none)");
-
-// If developer: set clientId fields from last used app,
-// lock ONLY if they have 0/1 apps
+// If developer: lock clientId fields to their single allowed app
 if (me.role !== "admin") {
   const cfgClientIdEl = document.getElementById("cfg-clientId");
   const adClientIdEl = document.getElementById("ad-clientId");
 
-  const last = localStorage.getItem("last_client_id") || allowed[0] || "";
+  const first = (allowed[0] || "").trim();
 
-  if (cfgClientIdEl) cfgClientIdEl.value = last;
-  if (adClientIdEl) adClientIdEl.value = last;
+  if (cfgClientIdEl) {
+    cfgClientIdEl.value = first;
+    cfgClientIdEl.disabled = true;
+  }
+  if (adClientIdEl) {
+    adClientIdEl.value = first;
+    adClientIdEl.disabled = true;
+  }
 
-  const lock = allowed.length <= 1; // lock only if one app
-  if (cfgClientIdEl) cfgClientIdEl.disabled = lock;
-  if (adClientIdEl) adClientIdEl.disabled = lock;
-
-  if (last) localStorage.setItem("last_client_id", last);
+  localStorage.setItem("last_client_id", first);
 }
 
  
@@ -208,15 +206,6 @@ if (me.role !== "admin") {
   const form = document.getElementById("ad-form");
 
   let cachedAds = [];
-
-// App UI
-const addAppBtn = document.getElementById("add-app-btn");
-const newClientIdEl = document.getElementById("new-clientId");
-const addAppMsgEl = document.getElementById("add-app-msg");
-
-function setAddAppMsg(msg) {
-  if (addAppMsgEl) addAppMsgEl.textContent = msg || "";
-}
 
 
     // ---------------- Client Config wiring ----------------

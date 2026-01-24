@@ -42,13 +42,6 @@ async function apiLogin(username, password) {
     return data.token;
 }
 
-async function apiAddApp(clientId) {
-  return apiRequest("/me/apps", {
-    method: "POST",
-    body: { clientId },
-  });
-}
-
 
 async function apiRequest(path, { method = "GET", body } = {}) {
     const token = getToken();
