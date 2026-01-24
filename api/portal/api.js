@@ -42,7 +42,20 @@ async function apiLogin(username, password) {
     return data.token;
 }
 
-// For later: authenticated requests
+async function apiAddApp(clientId) {
+  return apiRequest("/apps", {
+    method: "POST",
+    body: { clientId },
+  });
+}
+
+async function apiAddApp(clientId) {
+  return apiRequest("/auth/add-app", {
+    method: "POST",
+    body: { clientId },
+  });
+}
+
 async function apiRequest(path, { method = "GET", body } = {}) {
     const token = getToken();
     const headers = { "Content-Type": "application/json" };

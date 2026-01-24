@@ -449,6 +449,41 @@ def portal_debug():
 def me():
     return request.user, 200
 
+@app.post("/apps")
+@require_auth
+def add_app():
+    """
+    Developer can add a clientId to their own allowed list.
+    Admin can add too (optional, but harmless).
+    """
+    body = request.get_json(force=True) or {}
+    client_id = (body.get("clientId") or "").strip()
+
+    if not client_id:
+        return {"error": "clientId is required"}, 400
+
+    # basic sanity (optional)
+    if len(client_id) < 2 or len(client_id) > 64:
+        return {"error": "clientId length must be 2..64"}, 400
+
+    username = request.user["username"]
+    role = request.user["role"]
+
+    if role == "admin":
+        # admin doesn't really need it, but allow anyway
+        return {"status": "ok", "clientId": client_id}, 200
+
+    # Upsert user and add to allowed list
+    users_collection().update_one(
+        {"username": username},
+        {"$addToSet": {"allowedClientIds": client_id}},
+        upsert=True
+    )
+
+    # Return updated list (nice for UI)
+    user = users_collection().find_one({"username": username}, {"_id": 0, "allowedClientIds": 1})
+    return {"status": "added", "clientId": client_id, "allowedClientIds": (user or {}).get("allowedClientIds", [])}, 200
+
 
 @app.get("/portal")
 def portal_root():
