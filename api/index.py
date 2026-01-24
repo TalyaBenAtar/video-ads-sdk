@@ -44,6 +44,9 @@ def configs_collection():
 def users_collection():
     return get_db()["users"]
 
+def apps_collection():
+    return get_db()["apps"]
+
 def _hash_password(password: str, salt: str | None = None) -> str:
     """
     Stores: pbkdf2$<salt>$<hash>
@@ -72,6 +75,13 @@ def _verify_password(password: str, stored: str) -> bool:
 mongo_uri = os.getenv("MONGODB_URI")
 if not mongo_uri:
     raise RuntimeError("MONGODB_URI is not set")
+
+# Ensure unique ownership of clientId
+try:
+    apps_collection().create_index("clientId", unique=True)
+except Exception:
+    pass
+
 
 # --- Admin Auth (JWT) ---
 ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "admin")
@@ -454,7 +464,7 @@ def me():
 def add_app():
     """
     Developer can add a clientId to their own allowed list.
-    Admin can add too (optional, but harmless).
+    Prevents stealing by using apps collection with unique ownership.
     """
     body = request.get_json(force=True) or {}
     client_id = (body.get("clientId") or "").strip()
@@ -462,27 +472,52 @@ def add_app():
     if not client_id:
         return {"error": "clientId is required"}, 400
 
-    # basic sanity (optional)
-    if len(client_id) < 2 or len(client_id) > 64:
-        return {"error": "clientId length must be 2..64"}, 400
+    # basic hygiene
+    if len(client_id) < 3 or " " in client_id or len(client_id) > 64:
+        return {"error": "clientId must be 3..64 chars and contain no spaces"}, 400
 
     username = request.user["username"]
     role = request.user["role"]
 
     if role == "admin":
-        # admin doesn't really need it, but allow anyway
         return {"status": "ok", "clientId": client_id}, 200
 
-    # Upsert user and add to allowed list
+    # 1) Claim ownership (atomic due to unique index)
+    try:
+        apps_collection().insert_one({
+            "clientId": client_id,
+            "ownerUsername": username,
+            "createdAt": int(time.time()),
+        })
+    except Exception:
+        # If already exists, check who owns it
+        existing = apps_collection().find_one({"clientId": client_id}, {"_id": 0})
+        if existing and existing.get("ownerUsername") != username:
+            return {"error": "clientId already belongs to another developer"}, 409
+        # if it's already owned by this user, that's fine (idempotent)
+
+    # 2) Add to user's allowed list
     users_collection().update_one(
         {"username": username},
         {"$addToSet": {"allowedClientIds": client_id}},
+        upsert=False
+    )
+
+    # 3) Create default config so app works immediately
+    configs_collection().update_one(
+        {"clientId": client_id},
+        {"$setOnInsert": {"clientId": client_id, "allowedTypes": ["image", "video"], "allowedCategories": []}},
         upsert=True
     )
 
-    # Return updated list (nice for UI)
+    # 4) Return updated list
     user = users_collection().find_one({"username": username}, {"_id": 0, "allowedClientIds": 1})
-    return {"status": "added", "clientId": client_id, "allowedClientIds": (user or {}).get("allowedClientIds", [])}, 200
+    return {
+        "status": "added",
+        "clientId": client_id,
+        "allowedClientIds": (user or {}).get("allowedClientIds", []),
+    }, 200
+
 
 
 @app.get("/portal")
