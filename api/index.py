@@ -233,9 +233,9 @@ def select_ad():
         "type": {"$in": allowed_types}
     }
 
-       if requested_type:
+    if requested_type:
         if requested_type not in allowed_types:
-            return jsonify({"ad": None})
+            return {"ad": None}
         query["type"] = requested_type
 
     if allowed_categories:
@@ -243,9 +243,9 @@ def select_ad():
 
     ads = list(ads_collection().find(query, {"_id": 0}))
     if not ads:
-        return jsonify({"ad": None})
+        return {"ad": None}
 
-    return jsonify({"ad": random.choice(ads)})
+    return jsonify(random.choice(ads))
 
 @app.get("/portal/_debug")
 def portal_debug():
