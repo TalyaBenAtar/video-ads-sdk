@@ -171,6 +171,30 @@ function renderAds(ads, container) {
 async function loadDashboard() {
   if (!requireTokenOrRedirect()) return;
 
+   const me = await apiRequest("/me"); // { username, role, allowedClientIds }
+  const allowed = me.allowedClientIds || [];
+
+  // If developer: lock clientId fields to allowed apps
+  if (me.role !== "admin") {
+    const cfgClientIdEl = document.getElementById("cfg-clientId");
+    const adClientIdEl = document.getElementById("ad-clientId");
+
+    const first = allowed[0] || "";
+
+    if (cfgClientIdEl) {
+      cfgClientIdEl.value = first;
+      cfgClientIdEl.disabled = true;
+    }
+    if (adClientIdEl) {
+      adClientIdEl.value = first;
+      adClientIdEl.disabled = true;
+    }
+
+    // Make refreshAds always use the allowed one
+    localStorage.setItem("last_client_id", first);
+  }
+
+ 
   const statusEl = document.getElementById("status");
   const adsEl = document.getElementById("ads-list");
   const logoutBtn = document.getElementById("logout-btn");
@@ -185,7 +209,6 @@ async function loadDashboard() {
   let cachedAds = [];
 
     // ---------------- Client Config wiring ----------------
-  const cfgClientIdEl = document.getElementById("cfg-clientId");
   const cfgTypeImageEl = document.getElementById("cfg-type-image");
   const cfgTypeVideoEl = document.getElementById("cfg-type-video");
   const cfgCategoriesEl = document.getElementById("cfg-categories");
