@@ -209,6 +209,7 @@ async function loadDashboard() {
   let cachedAds = [];
 
     // ---------------- Client Config wiring ----------------
+  const cfgClientIdEl = document.getElementById("cfg-clientId");
   const cfgTypeImageEl = document.getElementById("cfg-type-image");
   const cfgTypeVideoEl = document.getElementById("cfg-type-video");
   const cfgCategoriesEl = document.getElementById("cfg-categories");
@@ -274,16 +275,6 @@ async function loadDashboard() {
     setCfgMsg(e?.message || "Save failed");
   }
 });
-
-
-      applyCfgForm(cfg);
-      localStorage.setItem("last_client_id", clientId);
-      setCfgMsg("Saved.");
-      await refreshAds();
-    } catch (e) {
-      setCfgMsg(e?.message || "Save failed");
-    }
-  });
 
 
   logoutBtn?.addEventListener("click", () => {
