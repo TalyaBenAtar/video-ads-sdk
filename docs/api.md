@@ -4,10 +4,6 @@ title: Backend API
 ---
 
 
-[Home](index.md) | [SDK](sdk.md) | [API](api.md) | [Portal](portal.md)
-
----
-
 
 \# 📡 Backend API
 
