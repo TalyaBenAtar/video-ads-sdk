@@ -1,5 +1,6 @@
 import os
 import random
+import hashlib, hmac, secrets
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from pymongo import MongoClient
@@ -40,6 +41,34 @@ def ads_collection():
 def configs_collection():
     return get_db()["configs"]
 
+def users_collection():
+    return get_db()["users"]
+
+def _hash_password(password: str, salt: str | None = None) -> str:
+    """
+    Stores: pbkdf2$<salt>$<hash>
+    """
+    if salt is None:
+        salt = secrets.token_hex(16)
+    dk = hashlib.pbkdf2_hmac(
+        "sha256",
+        password.encode("utf-8"),
+        salt.encode("utf-8"),
+        200_000,
+    )
+    return f"pbkdf2${salt}${dk.hex()}"
+
+def _verify_password(password: str, stored: str) -> bool:
+    try:
+        scheme, salt, hexhash = stored.split("$", 2)
+        if scheme != "pbkdf2":
+            return False
+        candidate = _hash_password(password, salt=salt)
+        return hmac.compare_digest(candidate, stored)
+    except Exception:
+        return False
+
+
 mongo_uri = os.getenv("MONGODB_URI")
 if not mongo_uri:
     raise RuntimeError("MONGODB_URI is not set")
@@ -57,11 +86,12 @@ if not JWT_SECRET:
 JWT_TTL_SECONDS = 60 * 60 * 12  # 12 hours
 
 
-def _create_jwt(username: str) -> str:
+def _create_jwt(username: str, role: str, allowed_client_ids: list[str] | None = None) -> str:
     now = int(time.time())
     payload = {
         "sub": username,
-        "role": "admin",
+        "role": role,
+        "allowedClientIds": allowed_client_ids or [],
         "iat": now,
         "exp": now + JWT_TTL_SECONDS,
     }
@@ -108,14 +138,54 @@ def login():
         return ("", 204)
 
     body = request.get_json(force=True) or {}
-    username = body.get("username")
-    password = body.get("password")
+    username = (body.get("username") or "").strip()
+    password = body.get("password") or ""
 
-    if username != ADMIN_USERNAME or password != ADMIN_PASSWORD:
+    # 1) Admin login (existing behavior)
+    if username == ADMIN_USERNAME and password == ADMIN_PASSWORD:
+        token = _create_jwt(username=username, role="admin")
+        return {"token": token}, 200
+
+    # 2) Developer login (DB-backed)
+    user = users_collection().find_one({"username": username}, {"_id": 0})
+    if not user:
         return {"error": "Invalid credentials"}, 401
 
-    token = _create_jwt(username)
+    if not _verify_password(password, user.get("passwordHash", "")):
+        return {"error": "Invalid credentials"}, 401
+
+    role = user.get("role", "developer")
+    allowed = user.get("allowedClientIds", [])
+
+    token = _create_jwt(username=username, role=role, allowed_client_ids=allowed)
     return {"token": token}, 200
+
+@app.post("/admin/users")
+@require_admin
+def admin_create_user():
+    body = request.get_json(force=True) or {}
+    username = (body.get("username") or "").strip()
+    password = body.get("password") or ""
+    role = body.get("role") or "developer"
+    allowed = body.get("allowedClientIds") or []
+
+    if not username or not password:
+        return {"error": "username and password are required"}, 400
+    if role not in ["admin", "developer"]:
+        return {"error": "role must be admin or developer"}, 400
+    if not isinstance(allowed, list):
+        return {"error": "allowedClientIds must be a list"}, 400
+
+    doc = {
+        "username": username,
+        "passwordHash": _hash_password(password),
+        "role": role,
+        "allowedClientIds": allowed,
+    }
+
+    users_collection().update_one({"username": username}, {"$set": doc}, upsert=True)
+    return {"status": "created", "username": username, "role": role, "allowedClientIds": allowed}, 201
+
 
 @app.get("/ads")
 def get_ads():
