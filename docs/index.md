@@ -1,1 +1,162 @@
-\# 📺 Ads SDK – Project DocumentationWelcome to the documentation for the \*\*Ads SDK system\*\* — a full-stack project that enables Android applications to display dynamic image and video ads using a reusable SDK and a cloud-based backend.This system was developed as part of the \*\*Advanced Seminar in Mobile Development\*\* course.---\## 🚀 OverviewThe Ads SDK system allows developers to integrate ads into their Android applications with minimal effort.All ad logic — selection, timing, UI, and lifecycle handling — is managed outside the host application and controlled dynamically via a backend service and an administration portal.No app updates are required when ads change.---\## 🧩 System ComponentsThe project is composed of four main components:\- \*\*Backend API\*\*  &nbsp; A Flask-based REST API deployed on Vercel, responsible for ad storage, selection logic, authentication, and configuration.\- \*\*Android Ads SDK\*\*  &nbsp; A reusable Android library published via JitPack, providing an API for showing ads inside Android apps.\- \*\*Demo Application (Memory Game)\*\*  &nbsp; An example Android application that integrates the SDK and demonstrates real usage.\- \*\*Administration Portal\*\*  &nbsp; A secure web interface for managing ads and client configurations.---\## 🧱 Architecture OverviewHigh-level flow:1\. Ads and configurations are managed through the \*\*Administration Portal\*\*2\. Data is stored and served by the \*\*Backend API\*\*3\. The \*\*Android Ads SDK\*\* communicates with the API4\. The \*\*host application\*\* triggers ads using a simple SDK callThe host app never handles ad UI, timing, or backend communication directly.---\## 📚 Documentation Sections\- 📱 \*\*Android SDK\*\*  &nbsp; Installation, initialization, and usage examples  &nbsp; → \[SDK Documentation](sdk.md)\- 📡 \*\*Backend API\*\*  &nbsp; Endpoints, authentication, and ad selection logic  &nbsp; → \[API Documentation](api.md)\- 🛠️ \*\*Administration Portal\*\*  &nbsp; Portal usage and ad management flow  &nbsp; → \[Portal Documentation](portal.md)---\## 🔗 Related Repositories\- Android SDK \& Demo App:  &nbsp; https://github.com/TalyaBenAtar/MemoryGame---## 📸 System Preview![Admin Portal](screenshots/admin-portal-open-screenshot.png)![SDK Ad Display](screenshots/sdk-ad-playing-1.png)---© 2026 Afeka – Tel Aviv College of Engineering
+[Home](index.md) | [SDK](sdk.md) | [API](api.md) | [Portal](portal.md)
+
+---
+
+
+\# 📺 Ads SDK – Project Documentation
+
+
+
+Welcome to the documentation for the \*\*Ads SDK system\*\* — a full-stack project that enables Android applications to display dynamic image and video ads using a reusable SDK and a cloud-based backend.
+
+
+
+This system was developed as part of the \*\*Advanced Seminar in Mobile Development\*\* course.
+
+
+
+---
+
+
+
+\## 🚀 Overview
+
+
+
+The Ads SDK system allows developers to integrate ads into their Android applications with minimal effort.
+
+
+
+All ad logic — selection, timing, UI, and lifecycle handling — is managed outside the host application and controlled dynamically via a backend service and an administration portal.
+
+
+
+No app updates are required when ads change.
+
+
+
+---
+
+
+
+\## 🧩 System Components
+
+
+
+The project is composed of four main components:
+
+
+
+\- \*\*Backend API\*\*  
+
+&nbsp; A Flask-based REST API deployed on Vercel, responsible for ad storage, selection logic, authentication, and configuration.
+
+
+
+\- \*\*Android Ads SDK\*\*  
+
+&nbsp; A reusable Android library published via JitPack, providing an API for showing ads inside Android apps.
+
+
+
+\- \*\*Demo Application (Memory Game)\*\*  
+
+&nbsp; An example Android application that integrates the SDK and demonstrates real usage.
+
+
+
+\- \*\*Administration Portal\*\*  
+
+&nbsp; A secure web interface for managing ads and client configurations.
+
+
+
+---
+
+
+
+\## 🧱 Architecture Overview
+
+
+
+High-level flow:
+
+
+
+1\. Ads and configurations are managed through the \*\*Administration Portal\*\*
+
+2\. Data is stored and served by the \*\*Backend API\*\*
+
+3\. The \*\*Android Ads SDK\*\* communicates with the API
+
+4\. The \*\*host application\*\* triggers ads using a simple SDK call
+
+
+
+The host app never handles ad UI, timing, or backend communication directly.
+
+
+
+---
+
+
+
+\## 📚 Documentation Sections
+
+
+
+\- 📱 \*\*Android SDK\*\*  
+
+&nbsp; Installation, initialization, and usage examples  
+
+&nbsp; → \[SDK Documentation](sdk.md)
+
+
+
+\- 📡 \*\*Backend API\*\*  
+
+&nbsp; Endpoints, authentication, and ad selection logic  
+
+&nbsp; → \[API Documentation](api.md)
+
+
+
+\- 🛠️ \*\*Administration Portal\*\*  
+
+&nbsp; Portal usage and ad management flow  
+
+&nbsp; → \[Portal Documentation](portal.md)
+
+
+
+---
+
+
+
+\## 🔗 Related Repositories
+
+
+
+\- Android SDK \& Demo App:  
+
+&nbsp; https://github.com/TalyaBenAtar/MemoryGame
+
+
+---
+
+## 📸 System Preview
+
+![Admin Portal](screenshots/admin-portal-open-screenshot.png)
+
+![SDK Ad Display](screenshots/sdk-ad-playing-1.png)
+
+
+
+---
+
+
+
+© 2026 Afeka – Tel Aviv College of Engineering
+
+
+
