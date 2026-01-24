@@ -239,31 +239,42 @@ async function loadDashboard() {
   }
 
   cfgLoadBtn?.addEventListener("click", async () => {
-    try {
-      setCfgMsg("Loading...");
-      const clientId = (cfgClientIdEl?.value || "").trim();
-      if (!clientId) return setCfgMsg("Enter a clientId.");
+  try {
+    setCfgMsg("Loading...");
+    const clientId = (document.getElementById("cfg-clientId")?.value || "").trim();
+    if (!clientId) return setCfgMsg("Enter a clientId.");
 
-      const cfg = await apiRequest(`/config/${encodeURIComponent(clientId)}`);
-      applyCfgForm(cfg);
-      localStorage.setItem("last_client_id", clientId);
-      setCfgMsg("Loaded.");
-      await refreshAds();
-    } catch (e) {
-      setCfgMsg(e?.message || "Load failed");
-    }
-  });
+    const cfg = await apiRequest(`/config/${encodeURIComponent(clientId)}`);
+    applyCfgForm(cfg);
+    localStorage.setItem("last_client_id", clientId);
+    setCfgMsg("Loaded.");
+    await refreshAds();
+  } catch (e) {
+    setCfgMsg(e?.message || "Load failed");
+  }
+});
 
-  cfgSaveBtn?.addEventListener("click", async () => {
-    try {
-      setCfgMsg("Saving...");
-      const { clientId, allowedTypes, allowedCategories } = readCfgForm();
-      if (!clientId) return setCfgMsg("Client ID is required.");
 
-      const cfg = await apiRequest(`/config/${encodeURIComponent(clientId)}`, {
-        method: "PUT",
-        body: { allowedTypes, allowedCategories },
-      });
+ cfgSaveBtn?.addEventListener("click", async () => {
+  try {
+    setCfgMsg("Saving...");
+    const { clientId, allowedTypes, allowedCategories } = readCfgForm();
+    if (!clientId) return setCfgMsg("Client ID is required.");
+
+    const cfg = await apiRequest(`/config/${encodeURIComponent(clientId)}`, {
+      method: "PUT",
+      body: { allowedTypes, allowedCategories },
+    });
+
+    applyCfgForm(cfg);
+    localStorage.setItem("last_client_id", clientId);
+    setCfgMsg("Saved.");
+    await refreshAds();
+  } catch (e) {
+    setCfgMsg(e?.message || "Save failed");
+  }
+});
+
 
       applyCfgForm(cfg);
       localStorage.setItem("last_client_id", clientId);
